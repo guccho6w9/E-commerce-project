@@ -1,54 +1,27 @@
 import flet as ft
-import requests
+from registro import register_view
+from login import login_view
+from paginaPrincipal import pagina_principal_view  # Importar la vista principal
 
-API_URL = "http://127.0.0.1:8000/products/"  # URL del backend para crear productos
+async def main(page: ft.Page):
+    page.title = "App de Registro y Login"
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-def main(page: ft.Page):
-    page.title = "E-commerce Product Manager"
+    # Inicializar el nombre de usuario en la página
+    page.user_name = "Usuario"  # Valor por defecto
 
-    # Función para enviar datos al backend
-    def create_product(e):
-        product_data = {
-            "name": name_field.value,
-            "description": desc_field.value,
-            "price": float(price_field.value),
-            "image_url": image_url_field.value,
-        }
-        response = requests.post(API_URL, json=product_data)
-        if response.status_code == 200:
-            product = response.json()
-            product_list.controls.append(ft.Text(f"{product['name']} - ${product['price']}"))
-            page.update()
-            name_field.value = ""
-            desc_field.value = ""
-            price_field.value = ""
-            image_url_field.value = ""
-        else:
-            print("Error al crear el producto:", response.text)
+    # Función de manejo de rutas
+    def route_change(route):
+        page.views.clear()
+        if page.route == "/":
+            page.views.append(login_view(page))
+        elif page.route == "/register":
+            page.views.append(register_view(page))
+        elif page.route == "/main":  # Manejo de la ruta principal
+            page.views.append(pagina_principal_view(page, page.user_name))  # Usar el atributo user_name
+        page.update()
 
-    # Campos de entrada
-    name_field = ft.TextField(label="Nombre del producto")
-    desc_field = ft.TextField(label="Descripción")
-    price_field = ft.TextField(label="Precio")
-    image_url_field = ft.TextField(label="URL de la imagen (opcional)")
-
-    # Botón para crear el producto
-    create_button = ft.ElevatedButton("Crear producto", on_click=create_product)
-
-    # Lista para mostrar productos
-    product_list = ft.Column()
-
-    # Agrega todos los elementos a la página
-    page.add(
-        ft.Column([
-            name_field,
-            desc_field,
-            price_field,
-            image_url_field,
-            create_button,
-            ft.Text("Productos creados:"),
-            product_list
-        ])
-    )
+    page.on_route_change = route_change
+    page.go("/")  # Ruta inicial (login)
 
 ft.app(target=main)

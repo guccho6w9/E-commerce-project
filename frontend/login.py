@@ -1,57 +1,46 @@
-import flet as ft 
+import flet as ft
 import requests
+from paginaPrincipal import pagina_principal_view  # Importar la vista principal
 
-API_URL=""
+API_URL = "http://localhost:8000"
 
-async def main(page: ft.Page):
-    page.padding = 0
-    page.margin = 0
-    page.title = "Login Acceder"
-    
-    def revisa_user(e):
+def login_view(page):
+    def login_user(e):
         user_data = {
-            "name": name_user.value,
+            "email": email_user.value,
             "password": password_user.value,
         }
-        response = requests.post(API_URL, json=user_data)
+        response = requests.post(f"{API_URL}/login", json=user_data)
+        
         if response.status_code == 200:
-            pass
-            #Hay que hacer aca la comparacion primero ver que exista el usuario y si existe comparar las contraseñas
+            user_info = response.json()  # Suponiendo que recibes la información del usuario
+            user_name = user_info.get("name", "Usuario")
+            full_name = user_info.get("full_name", "Usuario Desconocido")  # Si tienes otro campo
+            print(user_name, full_name, user_info)
+            
+            # Almacenar el nombre del usuario en el objeto page
+            page.user_name = user_name
+            
+            # Redirigir a la vista principal con el nombre del usuario
+            page.views.clear()  # Limpiar vistas anteriores
+            page.views.append(pagina_principal_view(page, user_name))  # Agregar la vista principal
+            page.go("/main")  # Redirigir a la ruta principal (puedes cambiarla si es necesario)
         else:
-            print("Error al crear registro", response.text)
-    
-    #Campos de entrada
-    name_user = ft.TextField(label="Nombre del usuario", border_radius=20, width=800)
-    password_user = ft.TextField(label="Contraseña", border_radius=20, width=800)
-    
-    #Boton para crear el registro
-    create_button = ft.ElevatedButton("ACCEDER", on_click=revisa_user)
-    
-    
-    #Se crea un contenedor que tendra todos los elementos centrales
-    item_center = [
-        ft.Container(width=50), #Margen izquierdos
-        ft.Container(name_user, alignment=ft.alignment.center),
-        ft.Container(width=30), #Margen derecho
-        ft.Container(password_user, alignment=ft.alignment.center),
-        ft.Container(create_button, margin= ft.margin.only(top=20),alignment=ft.alignment.bottom_center)
-    ]
-    
-    #Se crean el footer, center y 
-    superior = ft.Container(height=80, margin = ft.margin.only(top=0))
-    centro = ft.Container(content=ft.Column(item_center),height=500, margin = ft.margin.only(top=10), alignment=ft.alignment.center)
-    inferior = ft.Container(height=80, margin = ft.margin.only(top=10))
-    
-    #Contenedor que contiene todo
-    col = ft.Column(spacing=0, controls=[
-        superior,
-        centro,
-        inferior,
-    ])
-    
-    #Contenedor padre
-    contenedor = ft.Container(col, bgcolor=ft.colors.WHITE, alignment=ft.alignment.top_center)
-    
-    await page.add_async(contenedor)
-    
-ft.app(target=main)
+            print("Error al iniciar sesión:", response.json().get("detail"))
+
+    email_user = ft.TextField(label="Correo electrónico", width=400)
+    password_user = ft.TextField(label="Contraseña", password=True, width=400)
+    login_button = ft.ElevatedButton("Iniciar sesión", on_click=login_user)
+
+    # Botón para ir a la vista de registro
+    register_button = ft.TextButton("Registrarse", on_click=lambda _: page.go("/register"))
+
+    return ft.View(
+        "/",
+        [
+            email_user,
+            password_user,
+            login_button,
+            register_button
+        ],
+    )
