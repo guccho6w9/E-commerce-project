@@ -2,7 +2,7 @@ import flet as ft
 import requests
 import re
 
-API_URL = "http://127.0.0.1:8000/register"
+API_URL = "http://localhost:8000/api/register/"  # Asegúrate de que coincida con tu configuración
 
 def register_view(page):
     def is_valid_email(email):
@@ -26,14 +26,18 @@ def register_view(page):
             "password": password_user.value,
         }
 
-        response = requests.post(API_URL, json=user_data)
-        
-        if response.status_code == 200:
+        try:
+            response = requests.post(API_URL, json=user_data)
+            response.raise_for_status()  # Lanza un error para respuestas de error HTTP
+            
             status_text.value = f"Registro exitoso. Usuario: {user_data['name']}"
             page.update()
             page.go("/")
-        else:
-            status_text.value = f"Error: {response.json().get('detail', 'No se pudo registrar el usuario')}"
+        except requests.exceptions.HTTPError as http_err:
+            status_text.value = f"Error: {response.json().get('detail', 'No se pudo registrar el usuario')} (HTTP {http_err.response.status_code})"
+            page.update()
+        except requests.exceptions.RequestException as req_err:
+            status_text.value = f"Error de conexión: {req_err}"
             page.update()
 
     # Campos de entrada
